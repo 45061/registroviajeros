@@ -1,26 +1,44 @@
-// import postgres from 'postgres';
+import mongoose from 'mongoose';
+import Invoice from '../models/Invoice';
+import Customer from '../models/Customer';
 
-// const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+await mongoose.connect(process.env.MONGODB_URL!);
 
-// async function listInvoices() {
-// 	const data = await sql`
-//     SELECT invoices.amount, customers.name
-//     FROM invoices
-//     JOIN customers ON invoices.customer_id = customers.id
-//     WHERE invoices.amount = 666;
-//   `;
+export async function listInvoices() {
+  // Asegúrate de estar conectado a MongoDB antes de llamar a esto
+  // Puedes poner tu lógica de conexión aquí o usar tu helper dbConnect()
 
-// 	return data;
-// }
+  // Busca las facturas con amount = 666 y trae también el nombre del cliente
+  const data = await Invoice.aggregate([
+    { $match: { amount: 666 } },
+    {
+      $lookup: {
+        from: 'customers', // nombre de la colección en minúscula
+        localField: 'customer_id',
+        foreignField: '_id',
+        as: 'customer',
+      },
+    },
+    { $unwind: '$customer' }, // Para que customer sea un objeto, no un array
+    {
+      $project: {
+        amount: 1,
+        name: '$customer.name',
+        _id: 0, // Si no quieres mostrar el _id de invoice
+      },
+    },
+  ]);
+  return data;
+}
 
 export async function GET() {
-  return Response.json({
-    message:
-      'Uncomment this file and remove this line. You can delete this file when you are finished.',
-  });
-  // try {
-  // 	return Response.json(await listInvoices());
-  // } catch (error) {
-  // 	return Response.json({ error }, { status: 500 });
-  // }
+  try {
+    // Asegúrate de conectar a la BD si no lo has hecho aún
+    // await dbConnect();
+
+    const invoices = await listInvoices();
+    return Response.json(invoices);
+  } catch (error) {
+    return Response.json({ error: String(error) }, { status: 500 });
+  }
 }

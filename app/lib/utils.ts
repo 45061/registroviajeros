@@ -9,7 +9,7 @@ export const formatCurrency = (amount: number) => {
 
 export const formatDateToLocal = (
   dateStr: string,
-  locale: string = 'en-US',
+  locale: string = 'en-US'
 ) => {
   const date = new Date(dateStr);
   const options: Intl.DateTimeFormatOptions = {
@@ -21,13 +21,17 @@ export const formatDateToLocal = (
   return formatter.format(date);
 };
 
-export const generateYAxis = (revenue: Revenue[]) => {
-  // Calculate what labels we need to display on the y-axis
-  // based on highest record and in 1000s
-  const yAxisLabels = [];
+export const generateYAxis = (revenue: Revenue[] = []) => {
+  // Si el array está vacío o es undefined, devuelve valores por defecto
+  if (!Array.isArray(revenue) || revenue.length === 0) {
+    return { yAxisLabels: ['$0K'], topLabel: 0 };
+  }
+
+  // Calcula el mayor registro
   const highestRecord = Math.max(...revenue.map((month) => month.revenue));
   const topLabel = Math.ceil(highestRecord / 1000) * 1000;
 
+  const yAxisLabels = [];
   for (let i = topLabel; i >= 0; i -= 1000) {
     yAxisLabels.push(`$${i / 1000}K`);
   }
